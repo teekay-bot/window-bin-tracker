@@ -21,57 +21,16 @@ A Windows system tray application that monitors your Recycle Bin size and sends 
 
 ## Installation
 
-### Option 1: Direct Download (Easiest)
+### Direct Download
 
 1. **Download the installer**:
-   - [Download RecycleBinTrackerSetup-1.1.0.exe](installer/RecycleBinTrackerSetup-1.1.0.exe) *(~5MB)*
+   - [Download RecycleBinTrackerSetup-1.1.0.exe](WindowBinTracker/installer/RecycleBinTrackerSetup-1.1.0.exe) *(~5MB)*
    - Or download from the latest [GitHub Release](https://github.com/teekay-bot/window-bin-tracker/releases)
 
 2. **Run the installer** (as Administrator):
    - Double-click `RecycleBinTrackerSetup-1.1.0.exe`
    - Follow the installation wizard
    - Choose installation directory (default: `C:\Program Files\RecycleBinTracker`)
-
-### Option 2: Build from Source
-
-1. **Build the application**:
-   ```powershell
-   cd "c:\Users\teeka\Git Projects\Personal\window-bin-tracker\WindowBinTracker"
-   dotnet build --configuration Release
-   ```
-
-2. **Create installer**:
-   ```powershell
-   # Use Inno Setup to create installer from setup.iss
-   # Or run the pre-built installer from the installer/ directory
-   ```
-
-3. **Run the installer** (as Administrator):
-   - Execute `RecycleBinTrackerSetup-1.1.0.exe` from the `installer/` directory
-   - Follow the installation wizard
-
-### Option 3: Manual Installation
-
-1. **Build the application**:
-   ```powershell
-   cd "c:\Users\teeka\Git Projects\Personal\window-bin-tracker\WindowBinTracker"
-   dotnet build --configuration Release
-   ```
-
-2. **Create installation directory**:
-   ```powershell
-   New-Item -ItemType Directory -Path "C:\Program Files\RecycleBinTracker" -Force
-   ```
-
-3. **Copy application files**:
-   ```powershell
-   Copy-Item -Path "bin\Release\net8.0-windows\*" -Destination "C:\Program Files\RecycleBinTracker" -Recurse -Force
-   ```
-
-4. **Create shortcuts** (optional):
-   - Desktop shortcut to `C:\Program Files\RecycleBinTracker\WindowBinTracker.exe`
-   - Start Menu shortcut to the same executable
-   - Startup folder shortcut for auto-start
 
 ## Usage
 
@@ -161,34 +120,3 @@ The application can also run as a Windows Service:
 - Windows 10 or later
 - .NET 8.0 Runtime (included in installer)
 - Administrative privileges for installation
-
-## Building from Source
-
-1. Clone the repository
-2. Install .NET 8.0 SDK
-3. Run `dotnet build --configuration Release`
-4. Create installer using Inno Setup with `setup.iss`
-5. Follow the installation instructions above
-
-## Downloads
-
-### Latest Version: 1.1.0
-- **[Download Installer](installer/RecycleBinTrackerSetup-1.1.0.exe)** - Windows Installer (~5MB)
-- **[View on GitHub](https://github.com/teekay-bot/window-bin-tracker)** - Source code and releases
-
-### File Information
-- **File**: `RecycleBinTrackerSetup-1.1.0.exe`
-- **Size**: ~5MB
-- **Requirements**: Windows 10+, .NET 8.0 Runtime (included)
-- **Permissions**: Requires Administrator for installation
-
-## Recent Updates
-
-### Version 1.1.0
-- ✨ Added **Clean Up** option to system tray context menu
-- 🎨 Updated with custom recycle bin icon
-- 🐛 Fixed UI text truncation issues
-- 🧹 Cleaned up unused code and dependencies
-- 📦 Improved installer configuration
-- 🏷️ Standardized version numbers across all components
-- 📝 Added version display in Settings form title
