@@ -17,18 +17,18 @@ A Windows system tray application that monitors your Recycle Bin size and sends 
   - Mute notifications for specific durations (1 hour, 24 hours, 7 days)
 - **Startup Options**: Option to start automatically with Windows
 - **Settings UI**: Easy-to-use settings dialog to configure all options
-- **Custom Icons**: Modern recycle bin icon for both system tray and application
+- **Custom Icons**: Modern recycle bin icon
 
 ## Installation
 
 ### Option 1: Direct Download (Easiest)
 
 1. **Download the installer**:
-   - [Download RecycleBinTrackerSetup.exe](WindowBinTracker/installer/RecycleBinTrackerSetup.exe) *(~5MB)*
+   - [Download RecycleBinTrackerSetup-1.1.0.exe](installer/RecycleBinTrackerSetup-1.1.0.exe) *(~5MB)*
    - Or download from the latest [GitHub Release](https://github.com/teekay-bot/window-bin-tracker/releases)
 
 2. **Run the installer** (as Administrator):
-   - Double-click `RecycleBinTrackerSetup.exe`
+   - Double-click `RecycleBinTrackerSetup-1.1.0.exe`
    - Follow the installation wizard
    - Choose installation directory (default: `C:\Program Files\RecycleBinTracker`)
 
@@ -47,7 +47,7 @@ A Windows system tray application that monitors your Recycle Bin size and sends 
    ```
 
 3. **Run the installer** (as Administrator):
-   - Execute `RecycleBinTrackerSetup.exe` from the `installer/` directory
+   - Execute `RecycleBinTrackerSetup-1.1.0.exe` from the `installer/` directory
    - Follow the installation wizard
 
 ### Option 3: Manual Installation
@@ -103,7 +103,6 @@ A Windows system tray application that monitors your Recycle Bin size and sends 
    - Right-click system tray icon → "Clean Up"
    - Confirmation dialog appears before emptying recycle bin
    - Success notification shown when completed
-   - Uses Windows Shell API with PowerShell fallback
 
 ## Configuration File
 
@@ -155,15 +154,13 @@ The application can also run as a Windows Service:
 - **No notifications**: Ensure notifications are enabled in settings and Windows notification settings
 - **High CPU usage**: Increase the check interval in settings
 - **Logs not created**: Check write permissions to the installation directory
-- **Icon not updating**: Restart Windows Explorer or reboot to refresh icon cache
 - **Clean Up not working**: Check administrative privileges and Windows permissions
 
 ## Requirements
 
 - Windows 10 or later
-- .NET 8.0 Runtime (installed automatically by the installer)
+- .NET 8.0 Runtime (included in installer)
 - Administrative privileges for installation
-- PowerShell access for Clean Up feature
 
 ## Building from Source
 
@@ -175,22 +172,23 @@ The application can also run as a Windows Service:
 
 ## Downloads
 
-### Latest Version: 1.1
-- **[Download Installer](installer/RecycleBinTrackerSetup.exe)** - Windows Installer (~5MB)
+### Latest Version: 1.1.0
+- **[Download Installer](installer/RecycleBinTrackerSetup-1.1.0.exe)** - Windows Installer (~5MB)
 - **[View on GitHub](https://github.com/teekay-bot/window-bin-tracker)** - Source code and releases
 
 ### File Information
-- **File**: `RecycleBinTrackerSetup.exe`
+- **File**: `RecycleBinTrackerSetup-1.1.0.exe`
 - **Size**: ~5MB
 - **Requirements**: Windows 10+, .NET 8.0 Runtime (included)
 - **Permissions**: Requires Administrator for installation
 
 ## Recent Updates
 
-### Version 1.1
+### Version 1.1.0
 - ✨ Added **Clean Up** option to system tray context menu
 - 🎨 Updated with custom recycle bin icon
 - 🐛 Fixed UI text truncation issues
 - 🧹 Cleaned up unused code and dependencies
-- 📦 Improved installer configuration for proper icon display
-- 📥 Added direct download links to README
+- 📦 Improved installer configuration
+- 🏷️ Standardized version numbers across all components
+- 📝 Added version display in Settings form title

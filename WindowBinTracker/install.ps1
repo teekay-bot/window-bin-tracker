@@ -61,7 +61,7 @@ $RegPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\RecycleBin
 New-Item -Path $RegPath -Force
 New-ItemProperty -Path $RegPath -Name "DisplayName" -Value "Recycle Bin Tracker" -PropertyType String -Force
 New-ItemProperty -Path $RegPath -Name "InstallLocation" -Value $InstallPath -PropertyType String -Force
-New-ItemProperty -Path $RegPath -Name "DisplayVersion" -Value "1.0.0" -PropertyType String -Force
+New-ItemProperty -Path $RegPath -Name "DisplayVersion" -Value "1.1.0" -PropertyType String -Force
 New-ItemProperty -Path $RegPath -Name "Publisher" -Value "Your Company" -PropertyType String -Force
 New-ItemProperty -Path $RegPath -Name "UninstallString" -Value "powershell -ExecutionPolicy Bypass -File `"$InstallPath\uninstall.ps1`"" -PropertyType String -Force
 

@@ -1,10 +1,11 @@
 [Setup]
 AppName=Recycle Bin Tracker
-AppVersion=1.1
+AppVersion=1.1.0
+AppVerName=Recycle Bin Tracker 1.1.0
 DefaultDirName={pf}\RecycleBinTracker
 DefaultGroupName=Recycle Bin Tracker
 OutputDir=installer
-OutputBaseFilename=RecycleBinTrackerSetup
+OutputBaseFilename=RecycleBinTrackerSetup-1.1.0
 Compression=lzma
 SolidCompression=yes
 PrivilegesRequired=admin

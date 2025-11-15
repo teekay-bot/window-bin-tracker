@@ -51,7 +51,7 @@ namespace WindowBinTracker.UI
 
         private void InitializeComponent()
         {
-            this.Text = "Recycle Bin Tracker Settings";
+            this.Text = "Recycle Bin Tracker Settings v1.1.0";
             this.Size = new Size(500, 600);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
