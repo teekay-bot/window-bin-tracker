@@ -13,22 +13,23 @@ namespace WindowBinTracker.Services
     {
         private readonly ILogger<RecycleBinMonitorService> _logger;
         private readonly IRecycleBinService _recycleBinService;
-        private readonly INotificationService _notificationService;
         private readonly ISystemTrayService _systemTrayService;
-        private readonly RecycleBinConfiguration _config;
+        private readonly ISettingsService _settingsService;
+        private System.Threading.Timer? _settingsTimer;
+        private long _currentThreshold;
+        private int _currentInterval;
+        private bool _notificationsEnabled = true;
 
         public RecycleBinMonitorService(
             ILogger<RecycleBinMonitorService> logger,
             IRecycleBinService recycleBinService,
-            INotificationService notificationService,
             ISystemTrayService systemTrayService,
-            IOptions<RecycleBinConfiguration> config)
+            ISettingsService settingsService)
         {
             _logger = logger;
             _recycleBinService = recycleBinService;
-            _notificationService = notificationService;
             _systemTrayService = systemTrayService;
-            _config = config.Value;
+            _settingsService = settingsService;
 
             // Subscribe to threshold reached events
             _recycleBinService.SizeThresholdReached += OnSizeThresholdReached;
@@ -40,7 +41,16 @@ namespace WindowBinTracker.Services
 
             try
             {
+                // Load initial settings
+                await LoadSettingsAndUpdateThreshold();
+                
+                // Monitor for settings changes every 5 seconds
+                _settingsTimer = new System.Threading.Timer(async _ => await LoadSettingsAndUpdateThreshold(),
+                    null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
+
+                _logger.LogInformation("Starting RecycleBinService monitoring...");
                 await _recycleBinService.StartMonitoringAsync();
+                _logger.LogInformation("RecycleBinService monitoring started");
 
                 // Keep the service running
                 while (!stoppingToken.IsCancellationRequested)
@@ -58,7 +68,39 @@ namespace WindowBinTracker.Services
             }
             finally
             {
+                _settingsTimer?.Dispose();
                 await _recycleBinService.StopMonitoringAsync();
+            }
+        }
+
+        private async Task LoadSettingsAndUpdateThreshold()
+        {
+            try
+            {
+                var settings = await _settingsService.GetSettingsAsync();
+                
+                _logger.LogInformation($"Loaded settings: Threshold={settings.SizeThresholdBytes} bytes, Interval={settings.CheckIntervalMs}ms, Notifications={settings.NotificationsEnabled}");
+                
+                // Check if threshold or interval changed
+                if (_currentThreshold != settings.SizeThresholdBytes || _currentInterval != settings.CheckIntervalMs)
+                {
+                    _currentThreshold = settings.SizeThresholdBytes;
+                    _currentInterval = settings.CheckIntervalMs;
+                    
+                    _logger.LogInformation($"Updating threshold to {FormatBytes(_currentThreshold)} and interval to {_currentInterval}ms");
+                    
+                    // Update the recycle bin service threshold
+                    await _recycleBinService.UpdateThresholdAsync(_currentThreshold, TimeSpan.FromMilliseconds(_currentInterval));
+                    
+                    _logger.LogInformation($"Updated monitoring threshold to {FormatBytes(_currentThreshold)} and interval to {_currentInterval}ms");
+                }
+                
+                // Store notifications enabled flag
+                _notificationsEnabled = settings.NotificationsEnabled;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load settings");
             }
         }
 
@@ -66,6 +108,13 @@ namespace WindowBinTracker.Services
         {
             try
             {
+                // Check if notifications are enabled
+                if (!_notificationsEnabled)
+                {
+                    _logger.LogInformation("Notifications are disabled, skipping notification");
+                    return;
+                }
+
                 string title = "Recycle Bin Size Alert";
                 string message = $"Recycle bin has reached {FormatBytes(e.CurrentSize)} " +
                                $"(threshold: {FormatBytes(e.Threshold)}). " +
@@ -73,8 +122,7 @@ namespace WindowBinTracker.Services
 
                 _logger.LogWarning($"Recycle bin threshold reached: {FormatBytes(e.CurrentSize)}");
 
-                // Show both notification service and system tray notification
-                await _notificationService.ShowNotificationAsync(title, message, NotificationType.Warning);
+                // Show system tray notification
                 _systemTrayService.ShowNotification(title, message, System.Windows.Forms.ToolTipIcon.Warning);
             }
             catch (Exception ex)

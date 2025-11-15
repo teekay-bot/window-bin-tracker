@@ -10,6 +10,7 @@ namespace WindowBinTracker.Interfaces
         Task<long> GetRecycleBinSizeAsync();
         Task StartMonitoringAsync();
         Task StopMonitoringAsync();
+        Task UpdateThresholdAsync(long thresholdBytes, TimeSpan checkInterval);
         bool IsMonitoring { get; }
     }
 

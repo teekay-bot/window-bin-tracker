@@ -88,11 +88,11 @@ namespace WindowBinTracker.Services
             OnShowSize(sender, e);
         }
 
-        private void OnShowSize(object? sender, EventArgs e)
+        private async void OnShowSize(object? sender, EventArgs e)
         {
             try
             {
-                var size = _recycleBinService.GetRecycleBinSizeAsync().Result;
+                var size = await _recycleBinService.GetRecycleBinSizeAsync();
                 string sizeText = FormatBytes(size);
                 
                 MessageBox.Show(
@@ -104,7 +104,8 @@ namespace WindowBinTracker.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get recycle bin size");
-                MessageBox.Show("Failed to get recycle bin size", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Failed to get recycle bin size", "Error", MessageBoxButtons.OK, 
+                    MessageBoxIcon.Error);
             }
         }
 

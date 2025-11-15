@@ -38,6 +38,16 @@ namespace WindowBinTracker
             var systemTrayService = serviceProvider.GetRequiredService<ISystemTrayService>();
             await systemTrayService.InitializeAsync();
 
+            // Start hosted services manually
+            var hostedServices = serviceProvider.GetServices<IHostedService>();
+            foreach (var service in hostedServices)
+            {
+                if (service is RecycleBinMonitorService monitorService)
+                {
+                    _ = Task.Run(() => monitorService.StartAsync(default));
+                }
+            }
+
             Application.Run();
         }
 
@@ -53,7 +63,8 @@ namespace WindowBinTracker
                     .ReadFrom.Configuration(hostingContext.Configuration)
                     .Enrich.FromLogContext()
                     .WriteTo.Console()
-                    .WriteTo.File("logs/recyclebin-.txt", rollingInterval: RollingInterval.Day));
+                    .WriteTo.File("logs/recyclebin-.txt", rollingInterval: RollingInterval.Day)
+                    .CreateLogger());
 
         static void ConfigureServices(IServiceCollection services)
         {
