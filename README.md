@@ -24,7 +24,7 @@ A Windows system tray application that monitors your Recycle Bin size and sends 
 ### Option 1: Direct Download (Easiest)
 
 1. **Download the installer**:
-   - [Download RecycleBinTrackerSetup.exe](installer/RecycleBinTrackerSetup.exe) *(~5MB)*
+   - [Download RecycleBinTrackerSetup.exe](WindowBinTracker/installer/RecycleBinTrackerSetup.exe) *(~5MB)*
    - Or download from the latest [GitHub Release](https://github.com/teekay-bot/window-bin-tracker/releases)
 
 2. **Run the installer** (as Administrator):
