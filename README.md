@@ -1,255 +1,152 @@
-# Window Native Template
+# Recycle Bin Tracker
 
-A comprehensive C# .NET template for building Windows-native applications with window management capabilities.
+A Windows system tray application that monitors your Recycle Bin size and sends notifications when it exceeds a configured threshold.
 
 ## Features
 
-- **Window Management**: Monitor, control, and track active windows on Windows
-- **Process Management**: Track and manage running processes
-- **Real-time Monitoring**: Background service for window change events
-- **Modern .NET**: Built with .NET 8.0 and modern C# features
-- **Dependency Injection**: Uses Microsoft.Extensions.DependencyInjection
-- **Structured Logging**: Serilog integration with console and file output
-- **Configuration**: Flexible JSON-based configuration system
+- **System Tray Integration**: Runs in the background with a system tray icon
+- **Configurable Threshold**: Set custom size thresholds for notifications
+- **Flexible Check Intervals**: Configure how often to check the Recycle Bin
+- **Notification Options**: 
+  - Windows Toast notifications
+  - System tray balloon tips
+  - Mute notifications for specific durations (1 hour, 24 hours, 7 days)
+- **Startup Options**: Option to start automatically with Windows
+- **Settings UI**: Easy-to-use settings dialog to configure all options
 
-## Prerequisites
+## Installation
 
-- .NET 8.0 SDK or later
-- Windows operating system
-- Visual Studio 2022 or VS Code with C# extension
+### Option 1: PowerShell Installation (Recommended)
 
-## Quick Start
-
-1. Clone or download this template
-2. Navigate to the project directory
-3. Restore dependencies:
-   ```bash
-   dotnet restore
-   ```
-4. Build the project:
-   ```bash
-   dotnet build
-   ```
-5. Run the application:
-   ```bash
-   dotnet run
+1. **Build the application**:
+   ```powershell
+   cd "c:\Users\teeka\Git Projects\Personal\window-bin-tracker\WindowBinTracker"
+   dotnet build --configuration Release
    ```
 
-## Project Structure
+2. **Run the installation script** (as Administrator):
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   .\install.ps1
+   ```
+   
+   To install with auto-start:
+   ```powershell
+   .\install.ps1 -AutoStart
+   ```
 
-```
-WindowNativeTemplate/
-├── Interfaces/           # Service interfaces
-│   ├── IWindowService.cs
-│   └── IProcessService.cs
-├── Services/            # Service implementations
-│   ├── WindowService.cs
-│   ├── ProcessService.cs
-│   └── WindowMonitorService.cs
-├── Program.cs           # Application entry point
-├── WindowNativeTemplate.csproj  # Project file
-├── appsettings.json     # Configuration
-├── .gitignore          # Git ignore file
-├── .editorconfig       # Editor configuration
-└── README.md           # This file
-```
+### Option 2: Manual Installation
+
+1. **Build the application**:
+   ```powershell
+   cd "c:\Users\teeka\Git Projects\Personal\window-bin-tracker\WindowBinTracker"
+   dotnet build --configuration Release
+   ```
+
+2. **Create installation directory**:
+   ```powershell
+   New-Item -ItemType Directory -Path "C:\Program Files\RecycleBinTracker" -Force
+   ```
+
+3. **Copy application files**:
+   ```powershell
+   Copy-Item -Path "bin\Release\net8.0-windows\*" -Destination "C:\Program Files\RecycleBinTracker" -Recurse -Force
+   ```
+
+4. **Create shortcuts** (optional):
+   - Desktop shortcut to `C:\Program Files\RecycleBinTracker\WindowBinTracker.exe`
+   - Start Menu shortcut to the same executable
+   - Startup folder shortcut for auto-start
 
 ## Usage
 
-### Basic Window Operations
+1. **Start the application**:
+   - Double-click the desktop shortcut
+   - Or run `WindowBinTracker.exe` from the installation directory
 
-```csharp
-// Get the window service
-var windowService = serviceProvider.GetRequiredService<IWindowService>();
+2. **System Tray Icon**:
+   - The application will appear in the system tray
+   - Right-click the icon for options:
+     - Show current Recycle Bin size
+     - Open Settings
+     - Exit
 
-// Get all active windows
-var windows = await windowService.GetActiveWindowsAsync();
+3. **Settings Configuration**:
+   - **Size Threshold**: Set the minimum size that triggers notifications
+   - **Check Interval**: Choose how often to check (seconds, minutes, or hours)
+   - **Notification Options**:
+     - Enable/disable notifications
+     - Choose between Toast notifications and balloon tips
+     - Minimize to tray option
+     - Start with Windows option
+   - **Mute Notifications**:
+     - Mute for 1 hour, 24 hours, or 7 days
+     - Unmute manually when needed
 
-// Get the foreground window
-var foregroundWindow = await windowService.GetForegroundWindowAsync();
+## Configuration File
 
-// Minimize a window
-await windowService.MinimizeWindowAsync(windowHandle);
-```
+Settings are stored in `%APPDATA%\WindowBinTracker\settings.json`. You can manually edit this file if needed.
 
-### Monitoring Window Changes
+## Logs
 
-```csharp
-// Subscribe to window change events
-windowService.WindowChanged += (sender, e) =>
-{
-    Console.WriteLine($"Window changed from {e.PreviousWindow?.Title} to {e.CurrentWindow?.Title}");
-};
+Application logs are stored in the `logs` subdirectory of the installation folder.
 
-// Start monitoring
-await windowService.StartMonitoringAsync();
-```
+## Uninstallation
 
-### Process Management
+### Automatic Uninstallation
 
-```csharp
-// Get the process service
-var processService = serviceProvider.GetRequiredService<IProcessService>();
+1. Run the uninstall script (as Administrator):
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File "C:\Program Files\RecycleBinTracker\uninstall.ps1"
+   ```
 
-// Get all running processes
-var processes = await processService.GetRunningProcessesAsync();
+2. Or use "Add or Remove Programs" in Windows Settings
 
-// Get a specific process
-var process = await processService.GetProcessByIdAsync(processId);
+### Manual Uninstallation
 
-// Kill a process
-await processService.KillProcessAsync(processId);
-```
+1. **Stop the application** if running
+2. **Delete the installation directory**:
+   ```powershell
+   Remove-Item -Path "C:\Program Files\RecycleBinTracker" -Recurse -Force
+   ```
+3. **Remove shortcuts** from Desktop, Start Menu, and Startup folder
+4. **Delete user settings**:
+   ```powershell
+   Remove-Item -Path "%APPDATA%\WindowBinTracker" -Recurse -Force
+   ```
 
-## Configuration
+## Running as Windows Service
 
-The application uses JSON configuration files:
+The application can also run as a Windows Service:
 
-- `appsettings.json` - Default configuration
-- `appsettings.Development.json` - Development-specific settings
-- `appsettings.Production.json` - Production-specific settings
+1. **Install as service**:
+   ```powershell
+   sc create "RecycleBinTracker" binPath="C:\Program Files\RecycleBinTracker\WindowBinTracker.exe --service"
+   sc start "RecycleBinTracker"
+   ```
 
-### Configuration Options
-
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "WindowNativeTemplate": "Debug"
-    }
-  },
-  "WindowMonitoring": {
-    "CheckIntervalMs": 500,
-    "LogWindowChanges": true,
-    "TrackInactiveWindows": false
-  },
-  "ProcessTracking": {
-    "RefreshIntervalMs": 5000,
-    "IncludeSystemProcesses": false
-  }
-}
-```
-
-## API Reference
-
-### IWindowService
-
-- `GetActiveWindowsAsync()` - Returns all visible windows
-- `GetForegroundWindowAsync()` - Returns the currently active window
-- `SetForegroundWindowAsync(IntPtr hWnd)` - Sets a window as foreground
-- `MinimizeWindowAsync(IntPtr hWnd)` - Minimizes a window
-- `MaximizeWindowAsync(IntPtr hWnd)` - Maximizes a window
-- `RestoreWindowAsync(IntPtr hWnd)` - Restores a window
-- `CloseWindowAsync(IntPtr hWnd)` - Closes a window
-- `StartMonitoringAsync()` - Starts monitoring window changes
-- `StopMonitoringAsync()` - Stops monitoring window changes
-
-### IProcessService
-
-- `GetRunningProcessesAsync()` - Returns all running processes
-- `GetProcessByIdAsync(int processId)` - Returns a specific process
-- `KillProcessAsync(int processId)` - Terminates a process
-- `StartProcessAsync(string path, string? arguments)` - Starts a new process
-
-## Data Models
-
-### WindowInfo
-
-```csharp
-public class WindowInfo
-{
-    public IntPtr Handle { get; set; }
-    public string Title { get; set; }
-    public string ProcessName { get; set; }
-    public int ProcessId { get; set; }
-    public bool IsVisible { get; set; }
-    public Rectangle Rectangle { get; set; }
-    public DateTime LastActive { get; set; }
-}
-```
-
-### ProcessInfo
-
-```csharp
-public class ProcessInfo
-{
-    public int Id { get; set; }
-    public string Name { get; set; }
-    public string Path { get; set; }
-    public DateTime StartTime { get; set; }
-    public long WorkingSet { get; set; }
-    public string? MainWindowTitle { get; set; }
-    public IntPtr MainWindowHandle { get; set; }
-}
-```
-
-## Logging
-
-The application uses Serilog for structured logging. Logs are written to:
-
-- Console output
-- Daily rolling files in the `logs/` directory
-
-## Building and Publishing
-
-### Debug Build
-```bash
-dotnet build -c Debug
-```
-
-### Release Build
-```bash
-dotnet build -c Release
-```
-
-### Publish as Self-Contained
-```bash
-dotnet publish -c Release -r win-x64 --self-contained true
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Security Considerations
-
-This application uses Windows API calls that may require elevated privileges in some scenarios. Be aware of:
-
-- Some windows may be protected and cannot be accessed
-- System processes may require administrator privileges
-- Always validate handles and process IDs before using them
+2. **Remove service**:
+   ```powershell
+   sc stop "RecycleBinTracker"
+   sc delete "RecycleBinTracker"
+   ```
 
 ## Troubleshooting
 
-### Common Issues
+- **Application won't start**: Check if .NET 8.0 Runtime is installed
+- **No notifications**: Ensure notifications are enabled in settings and Windows notification settings
+- **High CPU usage**: Increase the check interval in settings
+- **Logs not created**: Check write permissions to the installation directory
 
-1. **Access Denied**: Some windows and processes are protected by the OS
-2. **Handle Invalid**: Window handles can become invalid if the window is closed
-3. **Performance**: Monitoring too frequently can impact performance
+## Requirements
 
-### Debug Tips
+- Windows 10 or later
+- .NET 8.0 Runtime (installed automatically by the installer)
+- Administrative privileges for installation
 
-- Enable debug logging in configuration
-- Use Visual Studio's debugger to step through Windows API calls
-- Check the logs directory for detailed error information
+## Building from Source
 
-## Dependencies
-
-- Microsoft.Extensions.Hosting
-- Microsoft.Extensions.DependencyInjection
-- Microsoft.Extensions.Configuration
-- Serilog
-- System.Management
-
-## Version History
-
-- **1.0.0** - Initial release with basic window and process management
+1. Clone the repository
+2. Install .NET 8.0 SDK
+3. Run `dotnet build --configuration Release`
+4. Follow the installation instructions above

@@ -1,57 +1,83 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
+using System.IO;
 using System.Threading.Tasks;
-using WindowNativeTemplate.Services;
-using WindowNativeTemplate.Interfaces;
+using System.Windows.Forms;
+using WindowBinTracker.Interfaces;
+using WindowBinTracker.Services;
+using WindowBinTracker.UI;
 
-namespace WindowNativeTemplate
+namespace WindowBinTracker
 {
     class Program
     {
+        [STAThread]
         static async Task Main(string[] args)
         {
-            // Configure Serilog
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.Console()
-                .WriteTo.File("logs/app-.txt", rollingInterval: RollingInterval.Day)
-                .CreateLogger();
+            // Check if running as Windows Service
+            if (args.Length > 0 && args[0] == "--service")
+            {
+                await CreateHostBuilder(args).Build().RunAsync();
+                return;
+            }
 
-            try
-            {
-                Log.Information("Starting Window Native Template application");
+            // Run as Windows Forms application
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
 
-                var host = CreateHostBuilder(args).Build();
-                
-                // Get the window service and start monitoring
-                var windowService = host.Services.GetRequiredService<IWindowService>();
-                
-                await windowService.StartMonitoringAsync();
-                
-                Log.Information("Application started successfully. Press Ctrl+C to exit.");
-                
-                await host.RunAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Fatal(ex, "Application terminated unexpectedly");
-            }
-            finally
-            {
-                Log.CloseAndFlush();
-            }
+            var services = new ServiceCollection();
+            ConfigureServices(services);
+            var serviceProvider = services.BuildServiceProvider();
+
+            // Initialize system tray service
+            var systemTrayService = serviceProvider.GetRequiredService<ISystemTrayService>();
+            await systemTrayService.InitializeAsync();
+
+            Application.Run();
         }
 
         static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .UseSerilog()
-                .ConfigureServices((context, services) =>
+                .UseWindowsService()
+                .ConfigureServices((hostContext, services) =>
                 {
-                    services.AddSingleton<IWindowService, WindowService>();
-                    services.AddSingleton<IProcessService, ProcessService>();
-                    services.AddHostedService<WindowMonitorService>();
-                });
+                    ConfigureServices(services);
+                })
+                .UseSerilog((hostingContext, loggerConfiguration) => 
+                    loggerConfiguration
+                    .ReadFrom.Configuration(hostingContext.Configuration)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console()
+                    .WriteTo.File("logs/recyclebin-.txt", rollingInterval: RollingInterval.Day));
+
+        static void ConfigureServices(IServiceCollection services)
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production"}.json", optional: true, reloadOnChange: true)
+                .Build();
+
+            services.AddSingleton<IConfiguration>(configuration);
+
+            // Configure logging
+            services.AddLogging(builder =>
+            {
+                builder.AddSerilog(dispose: true);
+            });
+
+            // Register services
+            services.AddSingleton<IRecycleBinService, RecycleBinService>();
+            services.AddSingleton<ISettingsService, SettingsService>();
+            services.AddSingleton<ISystemTrayService, SystemTrayService>();
+
+            // Register hosted services
+            services.AddHostedService<RecycleBinMonitorService>();
+        }
     }
 }
