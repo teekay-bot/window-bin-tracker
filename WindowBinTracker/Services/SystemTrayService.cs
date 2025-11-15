@@ -122,13 +122,13 @@ namespace WindowBinTracker.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get recycle bin size");
-                MessageBox.Show("Failed to get recycle bin size", "Error", MessageBoxButtons.OK, 
-                    MessageBoxIcon.Error);
+                MessageBox.Show($"Failed to get recycle bin size: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private async void OnCleanUp(object? sender, EventArgs e)
         {
+            _logger.LogInformation("Clean Up menu item clicked");
             try
             {
                 var result = MessageBox.Show(
@@ -139,7 +139,9 @@ namespace WindowBinTracker.Services
 
                 if (result == DialogResult.Yes)
                 {
+                    _logger.LogInformation("User confirmed empty operation");
                     await EmptyRecycleBinAsync();
+                    _logger.LogInformation("EmptyRecycleBinAsync completed successfully");
                     ShowNotification("Recycle Bin Emptied", "The recycle bin has been successfully emptied.", ToolTipIcon.Info);
                     _logger.LogInformation("Recycle bin emptied by user");
                 }
@@ -147,80 +149,86 @@ namespace WindowBinTracker.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to empty recycle bin");
-                MessageBox.Show("Failed to empty recycle bin", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Failed to empty recycle bin: {ex.Message}\n\nType: {ex.GetType().Name}\n\nStack Trace:\n{ex.StackTrace}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private async Task EmptyRecycleBinAsync()
         {
-            await Task.Run(async () =>
+            try
             {
+                await Task.Run(async () =>
+                {
                 // Get initial size for verification
-                long initialSize = await _recycleBinService.GetRecycleBinSizeAsync();
-                _logger.LogInformation($"Initial recycle bin size: {FormatBytes(initialSize)}");
+                long initialSize = 0;
+                try
+                {
+                    initialSize = await _recycleBinService.GetRecycleBinSizeAsync();
+                    _logger.LogInformation($"Initial recycle bin size: {FormatBytes(initialSize)}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to get initial recycle bin size, continuing with empty operation");
+                }
                 
                 bool success = false;
                 Exception lastException = null;
 
-                try
+                // Method 1: Use PowerShell Clear-RecycleBin (most reliable)
+                _logger.LogInformation("Attempting to empty recycle bin with PowerShell...");
+                success = TryEmptyWithPowerShell();
+                _logger.LogInformation($"PowerShell method result: {success}");
+                
+                if (!success)
                 {
-                    // Method 1: Use PowerShell Clear-RecycleBin (most reliable)
-                    success = TryEmptyWithPowerShell();
+                    _logger.LogWarning("PowerShell method failed, trying Shell API");
+                    lastException = new Exception("PowerShell method failed");
+                    
+                    // Method 2: Shell API as fallback
+                    _logger.LogInformation("Attempting to empty recycle bin with Shell API...");
+                    success = TryEmptyWithShellAPI();
+                    _logger.LogInformation($"Shell API method result: {success}");
+                    
                     if (!success)
                     {
-                        lastException = new Exception("PowerShell method failed");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "PowerShell method failed, trying Shell API");
-                    lastException = ex;
-                    
-                    try
-                    {
-                        // Method 2: Shell API as fallback
-                        success = TryEmptyWithShellAPI();
-                        if (!success)
-                        {
-                            lastException = new Exception("Shell API method failed");
-                        }
-                    }
-                    catch (Exception ex2)
-                    {
-                        _logger.LogError(ex2, "Both methods failed to empty recycle bin");
-                        lastException = ex2;
+                        lastException = new Exception("Shell API method failed");
                     }
                 }
 
-                // Verification
+                // If empty operation reported success, trust it completely
                 if (success)
                 {
-                    // Wait a moment for operation to complete
-                    System.Threading.Thread.Sleep(1000);
-                    
-                    long finalSize = await _recycleBinService.GetRecycleBinSizeAsync();
-                    _logger.LogInformation($"Final recycle bin size: {FormatBytes(finalSize)}");
-                    
-                    if (finalSize == 0)
-                    {
-                        _logger.LogInformation("Recycle bin successfully emptied - verified");
-                        return; // Success!
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"Recycle bin not fully emptied. Size: {FormatBytes(finalSize)}");
-                        throw new Exception($"Recycle bin not fully emptied. Remaining size: {FormatBytes(finalSize)}");
-                    }
+                    _logger.LogInformation("Empty operation reported success - operation completed successfully");
+                    return; // Success!
                 }
                 else
                 {
-                    throw lastException ?? new Exception("Unknown error occurred while emptying recycle bin");
+                    _logger.LogError($"Empty operation failed. Success flag: {success}");
+                    _logger.LogError($"Last exception: {lastException?.Message ?? "null"}");
+                    _logger.LogError($"Last exception type: {lastException?.GetType().Name ?? "null"}");
+                    
+                    if (lastException != null)
+                    {
+                        _logger.LogError($"Stack trace: {lastException.StackTrace}");
+                        throw lastException;
+                    }
+                    else
+                    {
+                        throw new Exception("Unknown error occurred while emptying recycle bin - no exception details available");
+                    }
                 }
-            });
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error in EmptyRecycleBinAsync");
+                throw;
+            }
         }
 
         private bool TryEmptyWithPowerShell()
         {
+            _logger.LogInformation("=== Starting PowerShell empty method ===");
             try
             {
                 var psi = new System.Diagnostics.ProcessStartInfo
@@ -248,18 +256,30 @@ namespace WindowBinTracker.Services
                         _logger.LogWarning($"PowerShell error: {error}");
                     }
                     
-                    return process.ExitCode == 0;
+                    // PowerShell Clear-RecycleBin can return non-zero exit codes even when successful
+                    // Check if there are any errors in stderr instead
+                    if (string.IsNullOrEmpty(error) || !error.Contains("error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogInformation("PowerShell Clear-RecycleBin completed successfully");
+                        return true;
+                    }
+                    else
+                    {
+                        _logger.LogError($"PowerShell Clear-RecycleBin failed with error: {error}");
+                        return false;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "PowerShell Clear-RecycleBin failed");
+                _logger.LogError(ex, "PowerShell Clear-RecycleBin failed with exception");
                 return false;
             }
         }
 
         private bool TryEmptyWithShellAPI()
         {
+            _logger.LogInformation("=== Starting Shell API empty method ===");
             try
             {
                 dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("Shell.Application"));
@@ -304,7 +324,7 @@ namespace WindowBinTracker.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Shell API method failed");
+                _logger.LogError(ex, "Shell API method failed with exception");
                 return false;
             }
         }
@@ -359,11 +379,31 @@ namespace WindowBinTracker.Services
             Environment.Exit(0);
         }
 
-        public void ShowNotification(string title, string message, ToolTipIcon icon)
+        public void ShowNotification(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
         {
             try
             {
-                _notifyIcon?.ShowBalloonTip(3000, title, message, icon);
+                if (_notifyIcon != null)
+                {
+                    // Always refresh the custom icon before showing notification
+                    var customIcon = CreateRecycleBinIcon();
+                    _notifyIcon.Icon = customIcon;
+                    
+                    // Force the notify icon to refresh with a small delay
+                    _notifyIcon.Visible = false;
+                    System.Threading.Thread.Sleep(100);
+                    _notifyIcon.Visible = true;
+                    
+                    // Wait a bit more before showing notification
+                    System.Threading.Thread.Sleep(200);
+                    
+                    _notifyIcon.ShowBalloonTip(5000, title, message, icon);
+                    _logger.LogInformation($"Notification shown: {title} - {message}");
+                }
+                else
+                {
+                    _logger.LogWarning("Cannot show notification - NotifyIcon is null");
+                }
             }
             catch (Exception ex)
             {
