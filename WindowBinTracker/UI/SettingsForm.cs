@@ -52,11 +52,14 @@ namespace WindowBinTracker.UI
         private void InitializeComponent()
         {
             this.Text = "Recycle Bin Tracker Settings v1.1.0";
-            this.Size = new Size(500, 600);
+            this.Size = new Size(600, 600);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
+            
+            // Set form icon
+            this.Icon = CreateRecycleBinIcon();
 
             // Threshold settings
             var thresholdLabel = new Label
@@ -429,6 +432,37 @@ namespace WindowBinTracker.UI
             }
 
             return $"{number:n1} {suffixes[counter]}";
+        }
+
+        private Icon CreateRecycleBinIcon()
+        {
+            try
+            {
+                // Try to load from embedded resource first
+                var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                var resourceName = "WindowBinTracker.Resources.Icons.recyclebin.ico";
+                
+                using var stream = assembly.GetManifestResourceStream(resourceName);
+                if (stream != null)
+                {
+                    return new Icon(stream);
+                }
+                
+                // Try to load from file path (for development)
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "Icons", "recyclebin.ico");
+                if (File.Exists(iconPath))
+                {
+                    return new Icon(iconPath);
+                }
+                
+                // Fallback to default icon
+                return SystemIcons.Application;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load recycle bin icon");
+                return SystemIcons.Application;
+            }
         }
     }
 }
