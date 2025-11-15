@@ -1,8 +1,6 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 using WindowBinTracker.Interfaces;
 
@@ -179,12 +177,6 @@ namespace WindowBinTracker.Services
                 _disposed = true;
             }
         }
-    }
-
-    public class RecycleBinConfiguration
-    {
-        public long SizeThresholdBytes { get; set; } = 1073741824; // 1 GB default
-        public int CheckIntervalMs { get; set; } = 30000; // 30 seconds default
     }
 }
 

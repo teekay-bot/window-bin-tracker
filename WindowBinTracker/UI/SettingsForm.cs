@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Drawing;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using WindowBinTracker.Interfaces;
@@ -140,7 +139,7 @@ namespace WindowBinTracker.UI
             {
                 Text = "Start with Windows",
                 Location = new Point(20, 190),
-                Size = new Size(150, 23),
+                Size = new Size(180, 23),
                 Checked = false
             };
 

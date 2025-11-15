@@ -28,6 +28,11 @@
 
   <ItemGroup>
     <None Include="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="Resources\Icons\recyclebin.ico" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <ApplicationIcon>Resources\Icons\recyclebin.ico</ApplicationIcon>
+  </PropertyGroup>
 
 </Project>

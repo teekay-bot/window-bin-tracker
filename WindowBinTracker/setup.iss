@@ -1,6 +1,6 @@
 [Setup]
 AppName=Recycle Bin Tracker
-AppVersion=1.0
+AppVersion=1.1
 DefaultDirName={pf}\RecycleBinTracker
 DefaultGroupName=Recycle Bin Tracker
 OutputDir=installer
@@ -14,9 +14,9 @@ ArchitecturesInstallIn64BitMode=x64
 Source: "bin\Release\net8.0-windows\*"; DestDir: "{app}"; Flags: recursesubdirs
 
 [Icons]
-Name: "{group}\Recycle Bin Tracker"; Filename: "{app}\WindowBinTracker.exe"
+Name: "{group}\Recycle Bin Tracker"; Filename: "{app}\WindowBinTracker.exe"; IconFilename: "{app}\WindowBinTracker.exe"
 Name: "{group}\Uninstall Recycle Bin Tracker"; Filename: "{uninstallexe}"
-Name: "{userstartup}\Recycle Bin Tracker"; Filename: "{app}\WindowBinTracker.exe"
+Name: "{userstartup}\Recycle Bin Tracker"; Filename: "{app}\WindowBinTracker.exe"; IconFilename: "{app}\WindowBinTracker.exe"
 
 [Run]
 Filename: "{app}\WindowBinTracker.exe"; Description: "Launch Recycle Bin Tracker"; Flags: nowait postinstall skipifsilent
