@@ -52,7 +52,7 @@ namespace WindowBinTracker.UI
         private void InitializeComponent()
         {
             this.Text = "Recycle Bin Tracker Settings v1.1.0";
-            this.Size = new Size(600, 600);
+            this.Size = new Size(500, 600);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -142,7 +142,7 @@ namespace WindowBinTracker.UI
             {
                 Text = "Start with Windows",
                 Location = new Point(20, 190),
-                Size = new Size(180, 23),
+                Size = new Size(150, 23),
                 Checked = false
             };
 
@@ -151,7 +151,7 @@ namespace WindowBinTracker.UI
             {
                 Text = "Mute Notifications",
                 Location = new Point(20, 230),
-                Size = new Size(440, 120)
+                Size = new Size(340, 120)
             };
 
             mute1HourButton = new Button
@@ -172,21 +172,21 @@ namespace WindowBinTracker.UI
             {
                 Text = "Mute 7 Days",
                 Location = new Point(230, 25),
-                Size = new Size(100, 30)
+                Size = new Size(80, 30)
             };
 
             unmuteButton = new Button
             {
                 Text = "Unmute",
-                Location = new Point(340, 25),
-                Size = new Size(80, 30)
+                Location = new Point(320, 25),
+                Size = new Size(70, 30)
             };
 
             muteStatusLabel = new Label
             {
                 Text = "Notifications enabled",
                 Location = new Point(10, 65),
-                Size = new Size(410, 23),
+                Size = new Size(310, 23),
                 ForeColor = Color.Green
             };
 
@@ -195,7 +195,7 @@ namespace WindowBinTracker.UI
             {
                 Text = "Current Recycle Bin Size: Loading...",
                 Location = new Point(20, 370),
-                Size = new Size(440, 23),
+                Size = new Size(340, 23),
                 Font = new Font(this.Font, FontStyle.Bold)
             };
 
@@ -203,7 +203,7 @@ namespace WindowBinTracker.UI
             saveButton = new Button
             {
                 Text = "Save",
-                Location = new Point(250, 520),
+                Location = new Point(200, 520),
                 Size = new Size(80, 30),
                 UseVisualStyleBackColor = true
             };
@@ -211,7 +211,7 @@ namespace WindowBinTracker.UI
             cancelButton = new Button
             {
                 Text = "Cancel",
-                Location = new Point(340, 520),
+                Location = new Point(290, 520),
                 Size = new Size(80, 30),
                 UseVisualStyleBackColor = true
             };

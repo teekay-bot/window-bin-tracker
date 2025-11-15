@@ -153,59 +153,175 @@ namespace WindowBinTracker.Services
 
         private async Task EmptyRecycleBinAsync()
         {
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
+                // Get initial size for verification
+                long initialSize = await _recycleBinService.GetRecycleBinSizeAsync();
+                _logger.LogInformation($"Initial recycle bin size: {FormatBytes(initialSize)}");
+                
+                bool success = false;
+                Exception lastException = null;
+
                 try
                 {
-                    // Use Shell API to empty recycle bin
-                    dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("Shell.Application"));
-                    if (shell != null)
+                    // Method 1: Use PowerShell Clear-RecycleBin (most reliable)
+                    success = TryEmptyWithPowerShell();
+                    if (!success)
                     {
-                        // Get recycle bin folder
-                        dynamic folder = shell.NameSpace(10); // 10 = Recycle Bin
-                        if (folder != null)
-                        {
-                            // Get all items in recycle bin
-                            dynamic items = folder.Items();
-                            if (items != null && items.Count > 0)
-                            {
-                                // Select all items and delete them
-                                foreach (dynamic item in items)
-                                {
-                                    try
-                                    {
-                                        folder.InvokeVerb("delete"); // Use delete verb to permanently delete
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        _logger.LogWarning(ex, $"Failed to delete item: {item.Name}");
-                                    }
-                                }
-                            }
-                        }
+                        lastException = new Exception("PowerShell method failed");
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Shell API failed to empty recycle bin, trying alternative method");
+                    _logger.LogWarning(ex, "PowerShell method failed, trying Shell API");
+                    lastException = ex;
                     
-                    // Alternative method using PowerShell
-                    var psi = new System.Diagnostics.ProcessStartInfo
+                    try
                     {
-                        FileName = "powershell",
-                        Arguments = "-Command \"Clear-RecycleBin -Force\"",
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true
-                    };
-
-                    using (var process = System.Diagnostics.Process.Start(psi))
+                        // Method 2: Shell API as fallback
+                        success = TryEmptyWithShellAPI();
+                        if (!success)
+                        {
+                            lastException = new Exception("Shell API method failed");
+                        }
+                    }
+                    catch (Exception ex2)
                     {
-                        process?.WaitForExit(30000); // Wait max 30 seconds
+                        _logger.LogError(ex2, "Both methods failed to empty recycle bin");
+                        lastException = ex2;
                     }
                 }
+
+                // Verification
+                if (success)
+                {
+                    // Wait a moment for operation to complete
+                    System.Threading.Thread.Sleep(1000);
+                    
+                    long finalSize = await _recycleBinService.GetRecycleBinSizeAsync();
+                    _logger.LogInformation($"Final recycle bin size: {FormatBytes(finalSize)}");
+                    
+                    if (finalSize == 0)
+                    {
+                        _logger.LogInformation("Recycle bin successfully emptied - verified");
+                        return; // Success!
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"Recycle bin not fully emptied. Size: {FormatBytes(finalSize)}");
+                        throw new Exception($"Recycle bin not fully emptied. Remaining size: {FormatBytes(finalSize)}");
+                    }
+                }
+                else
+                {
+                    throw lastException ?? new Exception("Unknown error occurred while emptying recycle bin");
+                }
             });
+        }
+
+        private bool TryEmptyWithPowerShell()
+        {
+            try
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "powershell",
+                    Arguments = "-Command \"Clear-RecycleBin -Force\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                using (var process = System.Diagnostics.Process.Start(psi))
+                {
+                    if (process == null) return false;
+                    
+                    string output = process.StandardOutput.ReadToEnd();
+                    string error = process.StandardError.ReadToEnd();
+                    
+                    process.WaitForExit(30000); // Wait max 30 seconds
+                    
+                    _logger.LogInformation($"PowerShell Clear-RecycleBin output: {output}");
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        _logger.LogWarning($"PowerShell error: {error}");
+                    }
+                    
+                    return process.ExitCode == 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PowerShell Clear-RecycleBin failed");
+                return false;
+            }
+        }
+
+        private bool TryEmptyWithShellAPI()
+        {
+            try
+            {
+                dynamic shell = Activator.CreateInstance(Type.GetTypeFromProgID("Shell.Application"));
+                if (shell == null) return false;
+
+                dynamic folder = shell.NameSpace(10); // 10 = Recycle Bin
+                if (folder == null) return false;
+
+                dynamic items = folder.Items();
+                if (items == null || items.Count == 0) return true; // Already empty
+
+                // Try to use "Empty Recycle Bin" verb if available
+                foreach (dynamic verb in folder.Verbs())
+                {
+                    if (verb.Name.Equals("&Empty Recycle Bin", StringComparison.OrdinalIgnoreCase) ||
+                        verb.Name.Equals("Empty Recycle Bin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        verb.DoIt();
+                        return true;
+                    }
+                }
+
+                // Fallback: delete each item individually
+                int deletedCount = 0;
+                foreach (dynamic item in items)
+                {
+                    try
+                    {
+                        // Select the item first
+                        folder.SelectItem(item, 8); // 8 = Select all
+                        folder.InvokeVerb("delete");
+                        deletedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, $"Failed to delete item: {item.Name}");
+                    }
+                }
+
+                _logger.LogInformation($"Deleted {deletedCount} items via Shell API");
+                return deletedCount > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Shell API method failed");
+                return false;
+            }
+        }
+
+        private string FormatBytes(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int counter = 0;
+            decimal number = bytes;
+
+            while (Math.Round(number / 1024) >= 1)
+            {
+                number /= 1024;
+                counter++;
+            }
+
+            return $"{number:n1} {suffixes[counter]}";
         }
 
         private void OnSettings(object? sender, EventArgs e)
@@ -243,11 +359,11 @@ namespace WindowBinTracker.Services
             Environment.Exit(0);
         }
 
-        public void ShowNotification(string title, string message, ToolTipIcon icon = ToolTipIcon.Info)
+        public void ShowNotification(string title, string message, ToolTipIcon icon)
         {
             try
             {
-                _notifyIcon?.ShowBalloonTip(5000, title, message, icon);
+                _notifyIcon?.ShowBalloonTip(3000, title, message, icon);
             }
             catch (Exception ex)
             {
@@ -263,21 +379,6 @@ namespace WindowBinTracker.Services
                 _notifyIcon?.Dispose();
                 _isDisposed = true;
             }
-        }
-
-        private string FormatBytes(long bytes)
-        {
-            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
-            int counter = 0;
-            decimal number = bytes;
-
-            while (Math.Round(number / 1024) >= 1)
-            {
-                number /= 1024;
-                counter++;
-            }
-
-            return $"{number:n1} {suffixes[counter]}";
         }
     }
 }
